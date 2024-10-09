@@ -4,6 +4,8 @@ const TransportProcessor = require('./lib/processor')
 const { promisify } = require('util')
 const ioHelper = require('./lib/ioHelper')
 const _ = require('lodash')
+const parseBaseURL = require('./lib/parse-base-url')
+const { type } = require('os')
 
 class ElasticDump extends TransportProcessor {
   constructor (input, output, options) {
@@ -40,6 +42,27 @@ class ElasticDump extends TransportProcessor {
 
     ioHelper(this, 'input')
     ioHelper(this, 'output')
+    if (this.options.mode == 'backup'){
+      this.options.inputBase = parseBaseURL(this.options.input, this.options)
+      this.options.inputType = "elastic"
+      // either output is a file or an elasticserver
+      console.log(typeof this.options.output)
+      if (this.options.output.includes('http') || this.options.output.includes('https')){
+        this.options.outputBase = parseBaseURL(this.options.output, this.options)
+        this.options.outputType = "elastic"
+      } else {
+        this.options.outputBase = parseBaseURL(this.options.output, this.options)
+        this.options.outputType = "file"
+      }
+    } else if (this.options.mode == 'restore'){
+      this.inputType = "file"
+      this.outputType = "elastic"
+      this.inputBase = parseBaseURL(this.options.input, this.options)
+      this.outputBase = parseBaseURL(this.options.output, this.options)
+    }  else {
+      // exit with error
+      this.emit('error', { errors: ['invalid mode, mode can only be either backup or restore'] })
+    }
 
     if (this.options.type === 'data' && this.options.transform) {
       this.modifiers = this.generateModifiers(this.options.transform)
@@ -52,6 +75,8 @@ class ElasticDump extends TransportProcessor {
       callback(new Error('There was an error starting this dump'))
       return
     }
+    // console.log(`Easlticdump.js > dump > output ${this.output}`)
+    // console.log(`Checkpoints will be managed here ${this.options.checkpointPath}`)
 
     // promisify helpers
     this.get = promisify(this.output.get).bind(this.input)

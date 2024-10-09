@@ -142,6 +142,8 @@ const defaults = {
   csvQuoteChar: '"',
   csvEscapeChar: '"',
   csvIncludeEndRowDelimiter: false,
+  checkpointPath: null,
+  mode: 'backup', // backup or restore,
 
   // opensearch compatability
   'force-os-version': '7.10.2',
@@ -164,7 +166,23 @@ if (argv.debug === true) {
       process.exit(1)
     })
 }
+if (argv.checkpointPath == null) {
+  // throw error if checkpoint-path is not provided
+  console.error('checkpoint-path is required')
+  process.exit(1)
+} else if(argv.checkpointPath !== null) {
+  // create checkpoint directory if it does not exist
+  const checkpointDir = path.dirname(argv.checkpointPath);
+  const checkpointFile = argv.checkpointPath;
 
+  if (!fs.existsSync(checkpointDir)) {
+    fs.mkdirSync(checkpointDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(checkpointFile)) {
+    fs.writeFileSync(checkpointFile, JSON.stringify({}), 'utf8');
+  }
+}
 if (argv.help === true) {
   let helpText = require('fs').readFileSync(path.join(__dirname, '..', 'lib', 'help.txt'))
   helpText = helpText.toString()

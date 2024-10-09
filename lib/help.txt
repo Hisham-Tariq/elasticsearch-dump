@@ -20,6 +20,9 @@ Core options
                     Destination index and type
                     (default: all, example: index/type)
 
+--checkpoint-path
+                    Path to checkpoint json file 
+
 
 Options
 --------------------
